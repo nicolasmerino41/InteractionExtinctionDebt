@@ -1,0 +1,3 @@
+"source","n_links","mean_interacting_sites","median_interacting_sites","q95_interacting_sites","max_interacting_sites","proportion_single_site_links","mean_repeatability","median_repeatability"
+"empirical",939,3.30564430244941,2,10,32,0.454739084132055,0.644332012637543,0.636363636363636
+"model_generated",900612,1.38818270242901,1,3,12,0.744278335176524,0.42590212474737,0.333333333333333

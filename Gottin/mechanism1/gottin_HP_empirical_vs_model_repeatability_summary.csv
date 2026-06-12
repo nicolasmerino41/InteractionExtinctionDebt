@@ -1,0 +1,8 @@
+"metric","empirical_value","model_q025","model_q500","model_q975","empirical_above_model_975","empirical_below_model_025"
+"mean_interacting_sites",3.21238938053097,1.15685421994885,1.25463121783877,1.36633663366337,TRUE,FALSE
+"median_interacting_sites",1,1,1,1,FALSE,FALSE
+"q95_interacting_sites",15.8,2,2,3,TRUE,FALSE
+"max_interacting_sites",26,3,4,6,TRUE,FALSE
+"proportion_single_site_links",0.504424778761062,0.735287833081951,0.811398082276523,0.877079472558802,FALSE,TRUE
+"mean_repeatability",0.606999576912246,0.314421726071441,0.362152661409363,0.413784024113654,TRUE,FALSE
+"median_repeatability",0.545454545454545,0.2,0.25,0.333333333333333,TRUE,FALSE
