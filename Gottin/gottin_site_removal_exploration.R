@@ -8,6 +8,16 @@
 ## Can run either:
 ##   - Gottin-HP: host-parasitoid network
 ##   - Gottin-PP: plant-pollinator network
+#### ------------------------------------------------------------
+## Script: gottin_site_removal_exploration.R
+##
+## Purpose:
+## Exploratory analysis of signed model divergence under random
+## removal of spatial units in the Gottin dataset.
+##
+## Can run either:
+##   - Gottin-HP: host-parasitoid network
+##   - Gottin-PP: plant-pollinator network
 ##
 ## Run from the parent folder of the repository.
 ## Assumes the folder "Gottin/" exists.
@@ -19,7 +29,8 @@
 ## ---------------------------
 
 ## Choose either "HP" or "PP"
-network_type <- "HP"
+network_type <- "PP"
+
 
 ## ---------------------------
 ## 1. Load packages
@@ -118,8 +129,6 @@ clean_web_matrix <- function(web){
   web <- as.data.frame(web)
   
   ## Remove columns with missing or empty names.
-  ## This generalises the manual correction in the original HP script,
-  ## where some ant_nets had unnamed columns.
   bad_cols <- is.na(colnames(web)) | colnames(web) == ""
   if(any(bad_cols)){
     web <- web[, !bad_cols, drop = FALSE]
@@ -265,6 +274,8 @@ run_gottin_subset <- function(webs,
       relative_divergence_raw = NA_real_,
       divergence_conditioned = NA_real_,
       relative_divergence_conditioned = NA_real_,
+      mean_species_bias_raw = NA_real_,
+      mean_species_bias_conditioned = NA_real_,
       mean_abs_species_error_raw = NA_real_,
       mean_abs_species_error_conditioned = NA_real_
     ))
@@ -315,6 +326,8 @@ run_gottin_subset <- function(webs,
       relative_divergence_raw = NA_real_,
       divergence_conditioned = NA_real_,
       relative_divergence_conditioned = NA_real_,
+      mean_species_bias_raw = NA_real_,
+      mean_species_bias_conditioned = NA_real_,
       mean_abs_species_error_raw = NA_real_,
       mean_abs_species_error_conditioned = NA_real_
     ))
@@ -364,6 +377,22 @@ run_gottin_subset <- function(webs,
   
   degree_compare$observed_indegree[is.na(degree_compare$observed_indegree)] <- 0
   
+  ## Signed species-level bias:
+  ## positive = observed > expected; negative = observed < expected.
+  mean_species_bias_raw <- mean(
+    degree_compare$observed_indegree -
+      degree_compare$expected_indegree_raw,
+    na.rm = TRUE
+  )
+  
+  mean_species_bias_conditioned <- mean(
+    degree_compare$observed_indegree -
+      degree_compare$expected_indegree_conditioned,
+    na.rm = TRUE
+  )
+  
+  ## Absolute species-level error:
+  ## magnitude of mismatch, ignoring direction.
   mean_abs_species_error_raw <- mean(
     abs(degree_compare$observed_indegree -
           degree_compare$expected_indegree_raw),
@@ -376,7 +405,9 @@ run_gottin_subset <- function(webs,
     na.rm = TRUE
   )
   
-  ## Divergence
+  ## Signed network-level divergence:
+  ## positive = more realised links than expected;
+  ## negative = fewer realised links than expected.
   divergence_raw <- n_realised_links - n_expected_links_raw
   divergence_conditioned <- n_realised_links - n_expected_links_conditioned
   
@@ -404,6 +435,8 @@ run_gottin_subset <- function(webs,
     relative_divergence_raw = relative_divergence_raw,
     divergence_conditioned = divergence_conditioned,
     relative_divergence_conditioned = relative_divergence_conditioned,
+    mean_species_bias_raw = mean_species_bias_raw,
+    mean_species_bias_conditioned = mean_species_bias_conditioned,
     mean_abs_species_error_raw = mean_abs_species_error_raw,
     mean_abs_species_error_conditioned = mean_abs_species_error_conditioned
   )
@@ -461,7 +494,8 @@ site_removal_results <- bind_rows(results_list)
 ## ---------------------------
 
 write.csv(site_removal_results,
-          file = paste0("Gottin/",output_prefix, "_site_removal_divergence.csv"),
+          file = paste0("Gottin/", output_prefix,
+                        "_site_removal_divergence.csv"),
           row.names = FALSE)
 
 
@@ -483,12 +517,12 @@ plot_raw <- ggplot(site_removal_results,
                width = 0.02) +
   theme_classic(base_size = 14) +
   xlab("Fraction of sites removed") +
-  ylab("Relative divergence: observed - expected / expected") +
+  ylab("Relative divergence: (observed - expected) / expected") +
   ggtitle(paste0("Gottin-", network_type,
-                 ": divergence under random site removal"),
+                 ": signed divergence under random site removal"),
           subtitle = "Expected links calculated with raw pairwise interaction probabilities")
 
-ggsave(paste0("Gottin/",output_prefix,
+ggsave(paste0("Gottin/", output_prefix,
               "_site_removal_relative_divergence_raw.png"),
        plot_raw,
        width = 7,
@@ -514,12 +548,12 @@ plot_conditioned <- ggplot(site_removal_results,
                width = 0.02) +
   theme_classic(base_size = 14) +
   xlab("Fraction of sites removed") +
-  ylab("Relative divergence: observed - expected / expected") +
+  ylab("Relative divergence: (observed - expected) / expected") +
   ggtitle(paste0("Gottin-", network_type,
-                 ": divergence under random site removal"),
+                 ": signed divergence under random site removal"),
           subtitle = "Expected links calculated with conditioned probabilities")
 
-ggsave(paste0("Gottin/",output_prefix,
+ggsave(paste0("Gottin/", output_prefix,
               "_site_removal_relative_divergence_conditioned.png"),
        plot_conditioned,
        width = 7,
@@ -528,12 +562,12 @@ ggsave(paste0("Gottin/",output_prefix,
 
 
 ## ---------------------------
-## 9. Plot absolute divergence
+## 9. Plot signed absolute-scale divergence
 ## ---------------------------
 
-plot_abs <- ggplot(site_removal_results,
-                   aes(x = removal_fraction,
-                       y = divergence_raw)) +
+plot_signed <- ggplot(site_removal_results,
+                      aes(x = removal_fraction,
+                          y = divergence_raw)) +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_point(alpha = 0.35, size = 2) +
   stat_summary(fun = mean,
@@ -547,11 +581,11 @@ plot_abs <- ggplot(site_removal_results,
   xlab("Fraction of sites removed") +
   ylab("Observed links - expected links") +
   ggtitle(paste0("Gottin-", network_type,
-                 ": absolute divergence under random site removal"))
+                 ": signed divergence under random site removal"))
 
-ggsave(paste0("Gottin/",output_prefix,
-              "_site_removal_absolute_divergence_raw.png"),
-       plot_abs,
+ggsave(paste0("Gottin/", output_prefix,
+              "_site_removal_signed_divergence_raw.png"),
+       plot_signed,
        width = 7,
        height = 5,
        dpi = 300)
@@ -566,15 +600,19 @@ summary_table <- site_removal_results %>%
   summarise(
     mean_realised_links = mean(n_realised_links, na.rm = TRUE),
     mean_expected_links_raw = mean(n_expected_links_raw, na.rm = TRUE),
+    mean_divergence_raw = mean(divergence_raw, na.rm = TRUE),
     mean_relative_divergence_raw = mean(relative_divergence_raw, na.rm = TRUE),
     sd_relative_divergence_raw = sd(relative_divergence_raw, na.rm = TRUE),
+    mean_species_bias_raw = mean(mean_species_bias_raw, na.rm = TRUE),
+    mean_species_bias_conditioned = mean(mean_species_bias_conditioned, na.rm = TRUE),
     mean_abs_species_error_raw = mean(mean_abs_species_error_raw, na.rm = TRUE),
+    mean_abs_species_error_conditioned = mean(mean_abs_species_error_conditioned, na.rm = TRUE),
     .groups = "drop"
   )
 
 print(summary_table)
 
 write.csv(summary_table,
-          file = paste0("Gottin/",output_prefix,
+          file = paste0("Gottin/", output_prefix,
                         "_site_removal_summary.csv"),
           row.names = FALSE)
