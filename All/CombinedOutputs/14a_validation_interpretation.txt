@@ -1,0 +1,14 @@
+Beta-binomial repeatability validation
+
+Result: shortcut, exact PMF, and Monte Carlo simulation agree within the requested tolerance.
+
+Maximum absolute difference between shortcut and exact PMF: 5.662e-15
+Maximum absolute difference between exact PMF and simulation: 0.00343
+
+Diagnosis:
+The near-perfect MBB conditional repeatability is a genuine implication of the fitted beta-binomial model, not a plotting or conditioning error.
+
+Interpretation:
+High fitted overdispersion can produce a latent propensity distribution with many pairs near zero interaction probability and a smaller set of pairs with high interaction probability.
+Because repeatability is conditioned on K > 0, realised links are disproportionately drawn from the high-propensity part of the fitted beta distribution.
+Those realised links are therefore predicted to occupy many or most of their co-occurring sites.

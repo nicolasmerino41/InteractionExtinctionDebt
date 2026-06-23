@@ -17,9 +17,9 @@ mysave <- function(obj, file) {
 ## Creating output folders
 flds <- c("rdata", "csv") %T>% sapply(mymkdir)
 
-## Cleaning existing file folders
-file.remove(list.files(path="./rdata", full.names=T, pattern="*.rds"))
-file.remove(list.files(path="./csv", full.names=T, pattern="*.csv"))
+# ## Cleaning existing file folders
+# file.remove(list.files(path="./rdata", full.names=T, pattern="*.rds"))
+# file.remove(list.files(path="./csv", full.names=T, pattern="*.csv"))
 
 #### Main function
 ######################################

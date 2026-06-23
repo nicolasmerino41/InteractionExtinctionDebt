@@ -1,0 +1,17 @@
+Sabatino first-pass Sierra-level Galiana-style analysis
+
+This is an operational replication of the Galiana-style local co-occurrence framework.
+The spatial unit used here is Sierra.
+
+Important interpretation constraints:
+- Insects were detected through observed flower visits, so this analysis does not estimate true interaction probability conditional on independently surveyed insect occurrence.
+- Operational co-occurrence means: plant recorded in Sierra + valid insect recorded in Sierra.
+- SV, blank, missing, and clearly non-taxon insect labels are excluded from the primary binary interaction-network analysis, but retained in the cleaned raw-data audit.
+- Repeated rows within Sierra-Date are collapsed to binary plant-insect links for the primary analysis because their meaning is not yet confirmed.
+- Interaction abundance and flower abundance are retained in descriptive outputs but are not used in the primary homogeneous co-occurrence model.
+- Date-stratified analyses are exploratory and are only run for dates with adequate Sierra replication and enough empirical links.
+- Random Sierra removal is a structural/sampling diagnostic, not a literal habitat-loss experiment.
+
+Central interpretation:
+At zero Sierra removal, observed and expected full metaweb link numbers match by calibration.
+Positive observed-minus-expected divergence after Sierra removal means empirical links are retained more strongly than expected under one homogeneous co-occurrence-to-interaction probability.

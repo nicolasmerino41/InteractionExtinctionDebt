@@ -1,0 +1,10 @@
+Script 14: beta-binomial occupancy model
+
+1. MBB is a parsimonious exchangeable heterogeneity model, not a model that identifies which pair has high interaction propensity.
+2. Both M0 and MBB are calibrated to match the observed full metaweb link count. Differences after removal therefore reflect predicted occupancy structure, not baseline link-number mismatch.
+3. No parameters are refitted after site removal.
+4. A better beta-binomial fit means that a single global p is insufficient to describe the distribution of interaction occurrence across operational co-occurrence opportunities.
+5. A reduction in removal error means that pair-to-pair heterogeneity in local interaction propensity explains part of the empirical link-retention excess without needing to predict specific pair identities.
+6. Site removal remains a structural/sampling diagnostic, not a habitat-loss forecast.
+7. The model uses the raw/unconditioned formulation only; no consumer-level conditioned formula is used.
+8. The MBB repeatability curve in this rebuilt version uses exact beta-binomial PMF conditional means E[K/n | K > 0, n], matching the validation logic from script 14a.

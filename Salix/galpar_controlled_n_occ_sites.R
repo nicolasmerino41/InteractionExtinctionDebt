@@ -424,7 +424,7 @@ p_binned_repeatability <- ggplot(comparison_binned,
              shape = 1,
              size = 3) +
   geom_point(aes(y = empirical_mean_repeatability,
-                 size = empirical_n_links),
+                 size = empirical_n_links), 
              size = 3) +
   theme_classic(base_size = 14) +
   xlab("Number of co-occurring sites, binned") +

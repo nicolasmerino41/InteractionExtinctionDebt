@@ -1,0 +1,9 @@
+Sabatino census-round Galiana-style analysis
+
+1. Census rounds align each Sierra's first, second, third, etc. sampling occasion; they do not represent identical calendar dates or identical phenological conditions across Sierras.
+2. Differences among rounds may reflect seasonal turnover, phenology, sampling timing, variable effort, or variation in local community composition. They are not automatically independent replicates in a strict statistical sense.
+3. Cross-round regressions are descriptive and should not be overinterpreted.
+4. The primary value is to test whether pooled Sabatino results are stable across sampling rounds.
+5. Interaction counts and flower abundance are preserved but not used in the homogeneous model.
+6. Sierra removal is a structural/sampling diagnostic, not a habitat-loss experiment.
+7. Co-occurrence is operational: plant recorded in a Sierra during a census round + valid insect recorded in that Sierra during that census round.
