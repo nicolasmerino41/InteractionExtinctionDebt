@@ -1,0 +1,10 @@
+Script 16: consumer generalism and repeatability
+
+This script analyses consumers only, matching the direction closest to the original Figure 4 idea.
+The fitted model is the original conditioned homogeneous IR formulation.
+The x-variable is observed realised partners minus expected realised partners under the conditioned model.
+The y-variable is mean observed repeatability minus homogeneous expected repeatability among realised links with n >= 2.
+Links with n = 1 are excluded from repeatability because K/n is necessarily 1 among realised links.
+The null comparison simulates Binomial(n_ai, p) interaction counts while conditioning each consumer to have at least one realised link.
+The fitted p is not refitted in simulations.
+No causal interpretation is made here; this is a focused descriptive diagnostic.
