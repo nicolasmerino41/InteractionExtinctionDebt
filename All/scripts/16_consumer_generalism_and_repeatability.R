@@ -473,7 +473,6 @@ ggsave(
 ## ---------------------------
 ## Interpretation notes
 ## ---------------------------
-
 notes <- c(
   "Script 16: consumer generalism and repeatability",
   "",
