@@ -36,7 +36,7 @@ save_png_grid <- function(g, name, width = 12, height = 10){
     width = width,
     height = height,
     units = "in",
-    res = 320,
+    res = 320,  
     bg = "white"
   )
   grid::grid.newpage()
