@@ -333,9 +333,15 @@ write.csv2(
   row.names = FALSE
 )
 
+library(ggh4x)
 raw_point_plot <- ggplot(raw_point_data, aes(x = full_n, y = full_K)) +
   geom_point(size = 0.55, alpha = 0.35, colour = "black") +
-  facet_wrap(~ dataset, ncol = 5, scales = "free") +
+  facet_wrap2(
+    ~ dataset,
+    ncol = 5,
+    scales = "free_x",
+    axes = "all"
+  ) +
   base_theme +
   theme(legend.position = "none") +
   xlab("Sites where pair is recorded together") +

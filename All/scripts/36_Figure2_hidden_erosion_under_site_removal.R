@@ -493,7 +493,7 @@ checks <- tibble::tibble(
       dplyr::summarise(s = sum(fraction), .groups = "drop") %>%
       dplyr::pull(s) %>%
       { all(abs(. - 1) < 1e-8, na.rm = TRUE) }
-  )
+  )   
 )
 
 write.csv2(
