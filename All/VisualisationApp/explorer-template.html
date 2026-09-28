@@ -1,0 +1,109 @@
+<div id="salix-explorer">
+<style>
+#salix-explorer .matrix text{fill:var(--foreground)}
+#salix-explorer .matrix{width:100%;display:block}
+#salix-explorer .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
+#salix-explorer .swatch{display:inline-block;width:12px;height:12px;margin-right:5px;background:var(--viz-series-1)}
+#salix-explorer .detail{min-height:3em;margin-top:8px;overflow-wrap:anywhere}
+#salix-explorer .detail:empty{display:none}
+#salix-explorer select{max-width:100%}
+</style>
+<h2>Spatial interaction explorer</h2>
+<div class="viz-controls"><label class="form-label">Dataset<select class="form-select" id="sg-dataset"></select></label><button class="btn" type="button" id="sg-reset">Reset view</button></div>
+<div class="viz-controls">
+<label class="form-label">Partner set<select class="form-select" id="sg-species"><option value="all">All regional interactions</option></select></label>
+<label class="form-label">Matrix order<select class="form-select" id="sg-order"><option value="rich">Richness / support</option><option value="similar">Shared-site similarity</option></select></label>
+</div>
+<div class="viz-controls">
+<label class="form-label">Selected site<select class="form-select" id="sg-site"><option value="">None</option></select></label>
+<label class="form-check"><input class="form-check-input" type="checkbox" id="sg-remove"><span class="form-check-label">Remove selected site</span></label>
+<label class="form-check"><input class="form-check-input" type="checkbox" id="sg-local"><span class="form-check-label">Only links at selected site</span></label>
+</div>
+<div class="text-small">Select a species to inspect its partners. Click a matrix row or choose a site to preview removal. Similarity is not geographic proximity.</div>
+<div class="text-small tabular-nums" id="sg-count" aria-live="polite"></div>
+<svg class="matrix cursor-interaction" role="img" aria-label="Site by interaction incidence matrix. Use the site selector for keyboard access."></svg>
+<div class="legend text-small"><span><i class="swatch"></i>Observed interaction</span><span><i class="swatch" style="background:var(--viz-series-2)"></i>Removed occurrence</span><span>× Regional link lost</span><span>• Reduced to one supporting site</span></div>
+<div id="sg-hover" class="detail text-small" aria-live="off">Rows: sites · columns: species pairs · filled cells: observed interactions</div>
+<div id="sg-effect" class="detail" aria-live="polite"></div>
+<div id="sg-names" class="text-small detail"></div>
+<label class="form-label">Inspect an interaction<select class="form-select" id="sg-link"><option value="">Choose a pair</option></select></label>
+<div class="text-small detail" id="sg-support"></div>
+<details id="sg-table-details"><summary>Interactions at selected site</summary><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Consumer</th><th>Resource</th><th>Supporting sites</th><th>After removing selected site</th></tr></thead><tbody id="sg-table"></tbody></table></div></details>
+<details><summary>How to read this view</summary><p>Top bars show the number of sites supporting each interaction. Left bars show each site's interaction richness in the current view. Filled cells record observed interactions; an empty cell means not observed. Regional support always uses the full dataset, including when a species or site filter is active.</p><p>Removal previews one site at a time. Losing all recorded partners includes species disappearing from the interaction records; it does not establish biological extinction or independent species presence. Similarity order is average-linkage clustering of the full incidence matrix using Jaccard dissimilarity; it is not a statistical test.</p></details>
+<script type="application/json" id="sg-data">DATA_PLACEHOLDER</script>
+<script>
+(()=>{
+ const root=document.getElementById('salix-explorer'),allData=JSON.parse(root.querySelector('#sg-data').textContent);let D,counts;
+ const $=s=>root.querySelector(s), species=$('#sg-species'),order=$('#sg-order'),site=$('#sg-site'),remove=$('#sg-remove'),svg=$('svg');
+ const dataset=$('#sg-dataset'),localOnly=$('#sg-local'),linkSelect=$('#sg-link');
+ Object.keys(allData).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k.replaceAll('_',' ');dataset.append(o)});dataset.value='Salix_Galpar';
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function loadDataset(){D=allData[dataset.value];if(Array.isArray(D.l[0]))D.l=D.l.map((l,i)=>({c:l[0],r:l[1],s:Array.isArray(l[2])?l[2]:[l[2]],i}));
+ counts=D.s.map((_,s)=>D.l.filter(l=>l.s.includes(s)).length);
+ species.innerHTML='<option value="all">All regional interactions</option>';site.innerHTML='<option value="">None</option>';remove.checked=false;localOnly.checked=false;linkSelect.value='';
+ for(const [g,names,title] of [['c',D.c,'Consumers'],['r',D.r,'Resources']]){
+  const group=document.createElement('optgroup');group.label=title;
+  names.map((name,i)=>({name,i,k:D.l.filter(l=>l[g]===i).length})).sort((a,b)=>b.k-a.k).forEach(x=>{const o=document.createElement('option');o.value=g+':'+x.i;o.textContent=x.name+' · '+x.k+' partners';group.append(o)});species.append(group);
+ }
+ D.s.map((name,i)=>({name,i,k:counts[i]})).sort((a,b)=>b.k-a.k).forEach(x=>{const o=document.createElement('option');o.value=x.i;o.textContent=x.name+' · '+x.k+' interactions';site.append(o)});
+ }
+ let layout;
+ function save(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{dataset:dataset.value,species:species.selectedOptions[0]?.textContent,site:site.value===''?null:D.s[+site.value],removed:remove.checked,order:order.value},privateContent:{dataset:dataset.value,species:species.value,site:site.value,removed:remove.checked,order:order.value,localOnly:localOnly.checked,link:linkSelect.value}}).catch(()=>{})}
+ function restore(state){const p=state?.privateContent;if(!p)return;if(allData[p.dataset])dataset.value=p.dataset;loadDataset();species.value=p.species||'all';if(!species.value)species.value='all';site.value=p.site??'';order.value=p.order||'rich';remove.checked=!!p.removed;localOnly.checked=!!p.localOnly}
+ function draw(){
+  const [g,id]=species.value.split(':');let links=D.l.filter(l=>g==='all'||l[g]===+id);
+  const selected=site.value===''?-1:+site.value;localOnly.disabled=selected<0;remove.disabled=selected<0;
+  if(localOnly.checked&&selected>=0)links=links.filter(l=>l.s.includes(selected));
+  let rows=g==='all'&&!localOnly.checked?D.s.map((_,i)=>i):[...new Set(links.flatMap(l=>l.s))];
+  if(selected>=0&&!rows.includes(selected))rows.push(selected);
+  const local=s=>links.reduce((n,l)=>n+l.s.includes(s),0);
+  if(order.value==='rich'){links.sort((a,b)=>b.s.length-a.s.length||a.i-b.i);rows.sort((a,b)=>local(b)-local(a)||a-b)}
+  else {const rs=new Map(D.so.map((x,i)=>[x,i])),cs=new Map(D.lo.map((x,i)=>[x,i]));rows.sort((a,b)=>rs.get(a)-rs.get(b));links.sort((a,b)=>cs.get(a.i)-cs.get(b.i))}
+  const w=Math.max(280,root.clientWidth),left=70,right=12,top=72,h= Math.max(220,Math.min(490,rows.length*12)),pw=w-left-right,cw=pw/Math.max(1,links.length),rh=h/Math.max(1,rows.length);
+  layout={rows,links,left,top,cw,rh,pw,h};svg.setAttribute('viewBox',`0 0 ${w} ${top+h+48}`);
+  const rowMap=new Map(rows.map((r,i)=>[r,i]));let out=`<title>${esc(dataset.value)} interaction incidence</title><desc>${rows.length} site rows and ${links.length} interaction columns. Sorting is not geographic.</desc>`;
+  const label=(x,y,t,extra='')=>`<text x="${x}" y="${y}" class="text-small" ${extra}>${esc(t)}</text>`;
+  out+=label(left,15,'Support per interaction (sites)');
+  const maxK=Math.max(1,...links.map(l=>l.s.length));
+  links.forEach((l,j)=>{out+=`<rect x="${left+j*cw}" y="${top-14-30*l.s.length/maxK}" width="${Math.max(.5,cw-.3)}" height="${30*l.s.length/maxK}" fill="var(--viz-series-1)" opacity=".55"/>`});
+  out+=label(left-6,top-40,maxK,'text-anchor="end"');
+  const maxR=Math.max(1,...rows.map(local));
+  rows.forEach((s,i)=>{out+=`<rect x="${left-8-24*local(s)/maxR}" y="${top+i*rh}" width="${24*local(s)/maxR}" height="${Math.max(.7,rh-.15)}" fill="var(--viz-series-1)" opacity=".5"/>`});
+  out+=`<rect data-chart-frame x="${left}" y="${top}" width="${pw}" height="${h}" fill="none" stroke="var(--border)"/>`;
+  if(selected>=0&&rowMap.has(selected))out+=`<rect x="${left}" y="${top+rowMap.get(selected)*rh}" width="${pw}" height="${Math.max(2,rh)}" fill="var(--accent)"/>`;
+  links.forEach((l,j)=>{const hit=l.s.includes(selected),lost=remove.checked&&hit&&l.s.length===1,thin=remove.checked&&hit&&l.s.length===2;
+   if(lost||thin)out+=`<rect x="${left+j*cw}" y="${top}" width="${Math.max(.7,cw)}" height="${h}" fill="var(--viz-series-2)" opacity=".10"/>`;
+   if(lost||thin)out+=label(left+(j+.5)*cw,top-2,lost?'×':'•','text-anchor="middle"');
+   l.s.forEach(s=>{out+=`<rect x="${left+j*cw}" y="${top+rowMap.get(s)*rh}" width="${Math.max(.6,cw-.15)}" height="${Math.max(.8,rh-.15)}" fill="var(--${remove.checked&&s===selected?'viz-series-2':'viz-series-1'})"/>`})
+  });
+  out+=label(left,top+h+20,'1');out+=label(w-right,top+h+20,links.length,'text-anchor="end"');
+  out+=label(left+pw/2,top+h+42,'Regional interactions (ordered columns)','class="axis-title text-small" data-axis="x" text-anchor="middle"');
+  out+=`<text class="axis-title text-small" data-axis="y" transform="translate(15,${top+h/2}) rotate(-90)" text-anchor="middle">Sites (${rows.length} rows)</text>`;
+  if(!links.length)out+=label(left+pw/2,top+h/2,'No matching interactions','text-anchor="middle"');
+  svg.innerHTML=out;
+  const occurrences=links.reduce((n,l)=>n+l.s.length,0);
+  $('#sg-count').textContent=`${dataset.value.replaceAll('_',' ')} · ${rows.length} sites shown · ${links.length} regional interactions · ${occurrences} local occurrences`;
+  const oldLink=linkSelect.value;linkSelect.innerHTML='<option value="">Choose a pair</option>';
+  links.forEach(l=>{const o=document.createElement('option');o.value=l.i;o.textContent=D.c[l.c]+' × '+D.r[l.r]+' · '+l.s.length+' sites';linkSelect.append(o)});linkSelect.value=oldLink;showLink();
+  $('#sg-table').innerHTML='';$('#sg-table-details').hidden=selected<0;
+  $('#sg-effect').textContent='';$('#sg-names').textContent='';
+  if(selected>=0){const affected=links.filter(l=>l.s.includes(selected)),lost=affected.filter(l=>l.s.length===1),thin=affected.filter(l=>l.s.length===2);
+   const allLost=D.l.filter(l=>l.s.length===1&&l.s[0]===selected);
+   const disconnected=['c','r'].map(type=>(type==='c'?D.c:D.r).filter((_,i)=>{const ls=D.l.filter(l=>l[type]===i);return ls.length&&ls.every(l=>l.s.length===1&&l.s[0]===selected)}).length);
+   $('#sg-effect').textContent=`${D.s[selected]} ${remove.checked?'removed':'— removal preview'}: ${affected.length} local occurrences lost · ${lost.length} regional links lost · ${thin.length} links reduced to one site (current view).`;
+   $('#sg-names').textContent=`Whole network: ${allLost.length} links lost; ${disconnected[0]} consumers and ${disconnected[1]} resources lose every recorded partner (includes disappearance from records).`+(lost.length?' Lost pairs: '+lost.slice(0,5).map(l=>D.c[l.c]+' × '+D.r[l.r]).join('; ')+(lost.length>5?' …':''):'');
+   $('#sg-table').innerHTML=affected.slice().sort((a,b)=>a.s.length-b.s.length).map(l=>`<tr><td>${esc(D.c[l.c])}</td><td>${esc(D.r[l.r])}</td><td>${l.s.length}</td><td>${l.s.length===1?'Regional link lost':(l.s.length-1)+' supporting sites remain'}</td></tr>`).join('');
+  }
+ }
+ function cell(e){const box=svg.getBoundingClientRect(),y=(e.clientY-box.top)*(svg.viewBox.baseVal.height/box.height),x=(e.clientX-box.left)*(svg.viewBox.baseVal.width/box.width),a=layout;const i=Math.floor((y-a.top)/a.rh),j=Math.floor((x-a.left)/a.cw);return i>=0&&i<a.rows.length&&j>=0&&j<a.links.length?{s:a.rows[i],l:a.links[j]}:null}
+ svg.addEventListener('pointermove',e=>{const a=cell(e);if(a)$('#sg-hover').textContent=`Site ${D.s[a.s]} · ${D.c[a.l.c]} × ${D.r[a.l.r]} · ${a.l.s.includes(a.s)?'observed here':'not observed here'} · regional support: ${a.l.s.length} sites`});
+ svg.addEventListener('click',e=>{const a=cell(e);if(a){site.value=a.s;draw();save()}});
+ function showLink(){const l=D.l[+linkSelect.value];$('#sg-support').textContent=linkSelect.value!==''&&l?'Supporting sites: '+l.s.map(s=>D.s[s]+(remove.checked&&site.value!==''&&s===+site.value?' [removed]':'')).join('; '):''}
+ [species,order,site,remove,localOnly].forEach(el=>el.addEventListener('change',()=>{draw();save()}));
+ linkSelect.addEventListener('change',()=>{showLink();save()});dataset.addEventListener('change',()=>{loadDataset();draw();save()});
+ $('#sg-reset').addEventListener('click',()=>{loadDataset();order.value='rich';draw();save()});
+ loadDataset();restore(window.openai?.widgetState);window.addEventListener('openai:set_globals',e=>{if(e.detail?.globals?.widgetState){restore(e.detail.globals.widgetState);draw()}});
+ new ResizeObserver(draw).observe(root);draw();
+})();
+</script>
+</div>
