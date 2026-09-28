@@ -1,0 +1,224 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+[1] "Spanish_Spain.utf8"
+Loading required package: dplyr
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: tidyr
+Loading required package: ggplot2
+Loading required package: tibble
+Loading required package: igraph
+
+Attaching package: 'igraph'
+
+The following object is masked from 'package:tibble':
+
+    as_data_frame
+
+The following object is masked from 'package:tidyr':
+
+    crossing
+
+The following objects are masked from 'package:dplyr':
+
+    as_data_frame, groups, union
+
+The following objects are masked from 'package:stats':
+
+    decompose, spectrum
+
+The following object is masked from 'package:base':
+
+    union
+
+Loading required package: bipartite
+Loading required package: sna
+Loading required package: statnet.common
+
+Attaching package: 'statnet.common'
+
+The following objects are masked from 'package:base':
+
+    attr, order
+
+Loading required package: network
+
+'network' 1.19.0 (2024-12-08), part of the Statnet Project
+* 'news(package="network")' for changes since last version
+* 'citation("network")' for citation information
+* 'https://statnet.org' for help, support, and other information
+
+
+Attaching package: 'network'
+
+The following objects are masked from 'package:igraph':
+
+    %c%, %s%, add.edges, add.vertices, delete.edges, delete.vertices,
+    get.edge.attribute, get.edges, get.vertex.attribute, is.bipartite,
+    is.directed, list.edge.attributes, list.vertex.attributes,
+    set.edge.attribute, set.vertex.attribute
+
+sna: Tools for Social Network Analysis
+Version 2.8 created on 2024-09-07.
+copyright (c) 2005, Carter T. Butts, University of California-Irvine
+ For citation information, type citation("sna").
+ Type help(package="sna") to get started.
+
+
+Attaching package: 'sna'
+
+The following objects are masked from 'package:igraph':
+
+    betweenness, bonpow, closeness, components, degree, dyad.census,
+    evcent, hierarchy, is.connected, neighborhood, triad.census
+
+Loading required package: vegan
+Loading required package: permute
+
+Attaching package: 'permute'
+
+The following object is masked from 'package:igraph':
+
+    permute
+
+Loading required package: lattice
+This is vegan 2.6-4
+
+Attaching package: 'vegan'
+
+The following object is masked from 'package:igraph':
+
+    diversity
+
+ This is bipartite 2.21.
+ For latest changes see versionlog in ?"bipartite-package". For citation see: citation("bipartite").
+ Have a nice time plotting and analysing two-mode networks.
+
+Attaching package: 'bipartite'
+
+The following object is masked from 'package:vegan':
+
+    nullmodel
+
+The following object is masked from 'package:igraph':
+
+    strength
+
+Warning messages:
+1: package 'dplyr' was built under R version 4.3.3 
+2: package 'igraph' was built under R version 4.3.3 
+3: package 'bipartite' was built under R version 4.3.3 
+4: package 'sna' was built under R version 4.3.3 
+5: package 'network' was built under R version 4.3.3 
+Site importance: Quercus
+Site importance: Nahuel
+Site importance: Salix_Galpar
+Site importance: Gottin_HP
+Site importance: Gottin_PP
+Site importance: Garraf_HP
+Site importance: Garraf_PP
+Site importance: Garraf_PP2
+Site importance: Olot
+Site importance: Montseny
+        dataset   N links species species_with_occurrence_only_sites
+1       Quercus  22   133      79                                  0
+2        Nahuel   8   163     103                                  0
+3  Salix_Galpar 341   939     220                                 52
+4     Gottin_HP  32   113      61                                  0
+5     Gottin_PP  32   781     239                                  0
+6     Garraf_HP  25    89      65                                  0
+7     Garraf_PP  40   325     194                                  0
+8    Garraf_PP2  21   967     183                                  0
+9          Olot  14    92      51                                  0
+10     Montseny  18   707     244                                  0
+   occurrence_only_records
+1                        0
+2                        0
+3                      169
+4                        0
+5                        0
+6                        0
+7                        0
+8                        0
+9                        0
+10                       0
+# A tibble: 20 × 9
+   dataset      guild    actual_removal_fraction richness_vs_link_importance
+   <chr>        <chr>                      <dbl>                       <dbl>
+ 1 Garraf_HP    consumer                   0.48                        0.827
+ 2 Garraf_HP    resource                   0.48                        0.827
+ 3 Garraf_PP    consumer                   0.5                         0.886
+ 4 Garraf_PP    resource                   0.5                         0.886
+ 5 Garraf_PP2   consumer                   0.476                       0.785
+ 6 Garraf_PP2   resource                   0.476                       0.785
+ 7 Gottin_HP    consumer                   0.5                         0.727
+ 8 Gottin_HP    resource                   0.5                         0.727
+ 9 Gottin_PP    consumer                   0.5                         0.919
+10 Gottin_PP    resource                   0.5                         0.919
+11 Montseny     consumer                   0.5                         0.916
+12 Montseny     resource                   0.5                         0.916
+13 Nahuel       consumer                   0.5                         0.690
+14 Nahuel       resource                   0.5                         0.690
+15 Olot         consumer                   0.5                         0.703
+16 Olot         resource                   0.5                         0.703
+17 Quercus      consumer                   0.5                         0.718
+18 Quercus      resource                   0.5                         0.718
+19 Salix_Galpar consumer                   0.499                       0.810
+20 Salix_Galpar resource                   0.499                       0.810
+   rarity_vs_link_importance richness_vs_disconnection link_vs_disconnection
+                       <dbl>                     <dbl>                 <dbl>
+ 1                     0.996                    NA                    NA    
+ 2                     0.996                    NA                    NA    
+ 3                     0.991                    NA                    NA    
+ 4                     0.991                    NA                    NA    
+ 5                     0.977                    NA                    NA    
+ 6                     0.977                    NA                    NA    
+ 7                     0.981                    NA                    NA    
+ 8                     0.981                    NA                    NA    
+ 9                     0.992                    NA                    NA    
+10                     0.992                    NA                    NA    
+11                     0.992                    NA                    NA    
+12                     0.992                    NA                    NA    
+13                     0.929                    NA                    NA    
+14                     0.929                    NA                    NA    
+15                     0.974                    NA                    NA    
+16                     0.974                    NA                    NA    
+17                     0.955                    NA                    NA    
+18                     0.955                    NA                    NA    
+19                     0.984                    NA                    NA    
+20                     0.984                     0.288                 0.386
+   range_link_importance_pp range_disconnection_importance_pp
+                      <dbl>                             <dbl>
+ 1                     6.80                             0    
+ 2                     6.80                             0    
+ 3                     3.21                             0    
+ 4                     3.21                             0    
+ 5                     4.93                             0    
+ 6                     4.93                             0    
+ 7                     3.23                             0    
+ 8                     3.23                             0    
+ 9                     3.05                             0    
+10                     3.05                             0    
+11                     4.79                             0    
+12                     4.79                             0    
+13                     3.44                             0    
+14                     3.44                             0    
+15                     4.53                             0    
+16                     4.53                             0    
+17                     4.94                             0    
+18                     4.94                             0    
+19                     1.26                             0    
+20                     1.26                             0.714
+Finished: All/outputs/41_site_importance_exploration
