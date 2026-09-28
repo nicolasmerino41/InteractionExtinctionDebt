@@ -1,0 +1,1 @@
+{"chains": 4, "draws_per_chain": 250, "burn_sweeps": 100, "thinning_sweeps": 5, "seed_base": 42000}

@@ -1,0 +1,185 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+[1] "Spanish_Spain.utf8"
+Loading required package: dplyr
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: tidyr
+Loading required package: ggplot2
+Loading required package: tibble
+Loading required package: igraph
+
+Attaching package: 'igraph'
+
+The following object is masked from 'package:tibble':
+
+    as_data_frame
+
+The following object is masked from 'package:tidyr':
+
+    crossing
+
+The following objects are masked from 'package:dplyr':
+
+    as_data_frame, groups, union
+
+The following objects are masked from 'package:stats':
+
+    decompose, spectrum
+
+The following object is masked from 'package:base':
+
+    union
+
+Loading required package: bipartite
+Loading required package: sna
+Loading required package: statnet.common
+
+Attaching package: 'statnet.common'
+
+The following objects are masked from 'package:base':
+
+    attr, order
+
+Loading required package: network
+
+'network' 1.19.0 (2024-12-08), part of the Statnet Project
+* 'news(package="network")' for changes since last version
+* 'citation("network")' for citation information
+* 'https://statnet.org' for help, support, and other information
+
+
+Attaching package: 'network'
+
+The following objects are masked from 'package:igraph':
+
+    %c%, %s%, add.edges, add.vertices, delete.edges, delete.vertices,
+    get.edge.attribute, get.edges, get.vertex.attribute, is.bipartite,
+    is.directed, list.edge.attributes, list.vertex.attributes,
+    set.edge.attribute, set.vertex.attribute
+
+sna: Tools for Social Network Analysis
+Version 2.8 created on 2024-09-07.
+copyright (c) 2005, Carter T. Butts, University of California-Irvine
+ For citation information, type citation("sna").
+ Type help(package="sna") to get started.
+
+
+Attaching package: 'sna'
+
+The following objects are masked from 'package:igraph':
+
+    betweenness, bonpow, closeness, components, degree, dyad.census,
+    evcent, hierarchy, is.connected, neighborhood, triad.census
+
+Loading required package: vegan
+Loading required package: permute
+
+Attaching package: 'permute'
+
+The following object is masked from 'package:igraph':
+
+    permute
+
+Loading required package: lattice
+This is vegan 2.6-4
+
+Attaching package: 'vegan'
+
+The following object is masked from 'package:igraph':
+
+    diversity
+
+ This is bipartite 2.21.
+ For latest changes see versionlog in ?"bipartite-package". For citation see: citation("bipartite").
+ Have a nice time plotting and analysing two-mode networks.
+
+Attaching package: 'bipartite'
+
+The following object is masked from 'package:vegan':
+
+    nullmodel
+
+The following object is masked from 'package:igraph':
+
+    strength
+
+Warning messages:
+1: package 'dplyr' was built under R version 4.3.3 
+2: package 'igraph' was built under R version 4.3.3 
+3: package 'bipartite' was built under R version 4.3.3 
+4: package 'sna' was built under R version 4.3.3 
+5: package 'network' was built under R version 4.3.3 
+Preparing Quercus
+Preparing Nahuel
+Preparing Salix_Galpar
+Preparing Gottin_HP
+Preparing Gottin_PP
+Preparing Garraf_HP
+Preparing Garraf_PP
+Preparing Garraf_PP2
+Preparing Olot
+Preparing Montseny
+Quercus Margins draws 1000 trade fraction 1.0
+Quercus Opportunity draws 1000 trade fraction 0.518
+Quercus complete 4.6 seconds
+Nahuel Margins draws 1000 trade fraction 1.0
+Nahuel Opportunity draws 1000 trade fraction 0.944
+Nahuel complete 2.8 seconds
+Salix_Galpar Margins draws 1000 trade fraction 0.935
+Salix_Galpar Opportunity draws 1000 trade fraction 0.017
+Salix_Galpar complete 56.9 seconds
+Gottin_HP Margins draws 1000 trade fraction 0.982
+Gottin_HP Opportunity draws 1000 trade fraction 0.315
+Gottin_HP complete 4.3 seconds
+Gottin_PP Margins draws 1000 trade fraction 1.0
+Gottin_PP Opportunity draws 1000 trade fraction 0.992
+Gottin_PP complete 13.4 seconds
+Garraf_HP Margins draws 1000 trade fraction 0.967
+Garraf_HP Opportunity draws 1000 trade fraction 0.046
+Garraf_HP complete 2.9 seconds
+Garraf_PP Margins draws 1000 trade fraction 1.0
+Garraf_PP Opportunity draws 1000 trade fraction 0.432
+Garraf_PP complete 6.9 seconds
+Garraf_PP2 Margins draws 1000 trade fraction 1.0
+Garraf_PP2 Opportunity draws 1000 trade fraction 0.013
+Garraf_PP2 complete 13.9 seconds
+Olot Margins draws 1000 trade fraction 1.0
+Olot Opportunity draws 1000 trade fraction 0.638
+Olot complete 2.7 seconds
+Montseny Margins draws 1000 trade fraction 1.0
+Montseny Opportunity draws 1000 trade fraction 0.97
+Montseny complete 8.9 seconds
+All datasets completed
+Error in `bind_rows()`:
+! Can't combine `..1$site1` <integer> and `..3$site1` <character>.
+Backtrace:
+     ▆
+  1. ├─base::source("All/scripts/42/plots42.R")
+  2. │ ├─base::withVisible(eval(ei, envir))
+  3. │ └─base::eval(ei, envir)
+  4. │   └─base::eval(ei, envir)
+  5. ├─dplyr::bind_rows(...)
+  6. │ └─vctrs::vec_rbind(!!!dots, .names_to = .id, .error_call = current_env())
+  7. └─vctrs (local) `<fn>`()
+  8.   └─vctrs::vec_default_ptype2(...)
+  9.     ├─base::withRestarts(...)
+ 10.     │ └─base (local) withOneRestart(expr, restarts[[1L]])
+ 11.     │   └─base (local) doWithOneRestart(return(expr), restart)
+ 12.     └─vctrs::stop_incompatible_type(...)
+ 13.       └─vctrs:::stop_incompatible(...)
+ 14.         └─vctrs:::stop_vctrs(...)
+ 15.           └─rlang::abort(message, class = c(class, "vctrs_error"), ..., call = call)
+Execution halted
