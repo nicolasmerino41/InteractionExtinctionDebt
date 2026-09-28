@@ -1,0 +1,24 @@
+20×10 DataFrame
+ Row │ dataset       guild     original_nodes  current_nodes  original_links  current_links  identical_degree_multiset  species_degree_differences  max_cdf_difference  script29_export_error
+     │ String        String    Int64           Int64          Int64           Int64          Bool                       Int64                       Float64             Float64
+─────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ Quercus       Consumer              56             56             133            133                       true                           0           0.0                  4.16334e-16
+   2 │ Nahuel        Consumer              89             89             163            163                       true                           0           0.0                  3.88578e-16
+   3 │ Salix_Galpar  Consumer             126            126             939            939                       true                           0           0.0                  4.71845e-16
+   4 │ Gottin_HP     Consumer              21             22             108            113                      false                           1           0.0281385            3.60822e-16
+   5 │ Gottin_PP     Consumer             138            138             781            781                       true                           0           0.0                  4.44089e-16
+   6 │ Garraf_HP     Consumer              38             38              90             89                      false                           1           0.0263158            4.996e-16
+   7 │ Garraf_PP     Consumer             170            170             325            325                       true                           0           0.0                  4.16334e-16
+   8 │ Garraf_PP2    Consumer             141            141             967            967                       true                           0           0.0                  4.996e-16
+   9 │ Olot          Consumer              20             20              93             92                      false                           1           0.05                 0.0
+  10 │ Montseny      Consumer             194            194             707            707                       true                           0           0.0                  4.44089e-16
+  11 │ Quercus       Resource              23             23             133            133                       true                           0           0.0                  4.44089e-16
+  12 │ Nahuel        Resource              14             14             163            163                       true                           0           0.0                  4.44089e-16
+  13 │ Salix_Galpar  Resource              94             94             939            939                       true                           0           0.0                  4.996e-16
+  14 │ Gottin_HP     Resource              37             39             108            113                      false                           5           0.036036             3.33067e-16
+  15 │ Gottin_PP     Resource             101            101             781            781                       true                           0           0.0                  4.996e-16
+  16 │ Garraf_HP     Resource              27             27              90             89                      false                           1           0.037037             4.44089e-16
+  17 │ Garraf_PP     Resource              24             24             325            325                       true                           0           0.0                  3.33067e-16
+  18 │ Garraf_PP2    Resource              42             42             967            967                       true                           0           0.0                  4.44089e-16
+  19 │ Olot          Resource              31             31              93             92                      false                           1           0.0322581            4.44089e-16
+  20 │ Montseny      Resource              50             50             707            707                       true                           0           0.0                  0.0

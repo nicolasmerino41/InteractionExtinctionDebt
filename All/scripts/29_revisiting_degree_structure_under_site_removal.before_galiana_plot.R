@@ -236,7 +236,7 @@ retained_degrees_for_subset <- function(original_links,
            retained_degree_fraction)
 }
 
-cdf_from_degrees <- function(deg_vec, denominator_type, max_threshold){
+cdf_from_degrees <- function(deg_vec, denominator_type){
   deg_vec <- as.integer(deg_vec)
 
   if(denominator_type == "All original nodes"){
@@ -248,14 +248,14 @@ cdf_from_degrees <- function(deg_vec, denominator_type, max_threshold){
     max_deg <- ifelse(denom == 0, 0L, max(deg_vec, na.rm = TRUE))
   }
 
-  if(is.na(max_threshold) || max_threshold < 1 || denom == 0){
+  if(is.na(max_deg) || max_deg < 1 || denom == 0){
     return(data.frame(
       degree_threshold = integer(),
       cumulative_probability = numeric()
     ))
   }
 
-  x <- seq_len(max_threshold)
+  x <- seq_len(max_deg)
   data.frame(
     degree_threshold = x,
     cumulative_probability = vapply(x, function(xx){
@@ -275,13 +275,13 @@ make_cdf_rows <- function(node_transitions_subset){
 
   all_cdf <- node_transitions_subset %>%
     group_by(dataset, guild, removal_fraction, replicate) %>%
-    group_modify(~ cdf_from_degrees(.x$retained_degree, "All original nodes", max(.x$initial_degree))) %>%
+    group_modify(~ cdf_from_degrees(.x$retained_degree, "All original nodes")) %>%
     ungroup() %>%
     mutate(distribution_type = "All original nodes")
 
   active_cdf <- node_transitions_subset %>%
     group_by(dataset, guild, removal_fraction, replicate) %>%
-    group_modify(~ cdf_from_degrees(.x$retained_degree, "Active nodes only", max(.x$initial_degree))) %>%
+    group_modify(~ cdf_from_degrees(.x$retained_degree, "Active nodes only")) %>%
     ungroup() %>%
     mutate(distribution_type = "Active nodes only")
 
@@ -618,11 +618,96 @@ base_theme_29 <- theme_classic(base_size = 10) +
   )
 
 ## ---------------------------
-## Figures 1 and 2: Galiana-style observed-degree plotting in Julia/Makie.
-## Keep full threshold summaries for unbiased across-replicate aggregation;
-## the renderer removes redundant plateau points only after summarisation.
-plot_status <- system2('julia', c('--startup-file=no', shQuote('All/scripts/29_degree_distributions_galiana_plot.jl'), shQuote(normalizePath('.'))))
-if(plot_status != 0) stop('Script 29 Julia plotting failed')
+## Figure 1: CDF all nodes
+## ---------------------------
+
+cdf_all_plot <- cumulative_degree_summary_all %>%
+  filter(
+    distribution_type == "All original nodes",
+    removal_fraction %in% selected_removal_levels_for_cdf,
+    median_cumulative_probability > 0
+  ) %>%
+  mutate(
+    dataset = factor(dataset, levels = dataset_levels),
+    guild = factor(guild, levels = guild_levels),
+    removal_fraction_label = factor(as.character(removal_fraction),
+                                    levels = as.character(selected_removal_levels_for_cdf))
+  )
+
+p1 <- ggplot(
+  cdf_all_plot,
+  aes(x = degree_threshold,
+      y = median_cumulative_probability,
+      colour = removal_fraction_label,
+      fill = removal_fraction_label,
+      group = removal_fraction_label)
+) +
+  geom_ribbon(aes(ymin = q025, ymax = q975), alpha = 0.15, colour = NA) +
+  geom_line(linewidth = 0.8, na.rm = TRUE) +
+  geom_point(size = 0.9, na.rm = TRUE) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_colour_manual(values = removal_colours, name = "Sites removed") +
+  scale_fill_manual(values = removal_colours, name = "Sites removed") +
+  facet_grid(guild ~ dataset, scales = "free") +
+  base_theme_29 +
+  xlab("Retained binary degree") +
+  ylab("P(retained degree >= x) among all original nodes")
+
+ggsave(
+  file.path(combined_out, "29_cumulative_degree_distributions_all_nodes.png"),
+  p1,
+  width = 16,
+  height = 6.5,
+  dpi = 300
+)
+
+## ---------------------------
+## Figure 2: CDF active nodes
+## ---------------------------
+
+cdf_active_plot <- cumulative_degree_summary_all %>%
+  filter(
+    distribution_type == "Active nodes only",
+    removal_fraction %in% selected_removal_levels_for_cdf,
+    median_cumulative_probability > 0
+  ) %>%
+  mutate(
+    dataset = factor(dataset, levels = dataset_levels),
+    guild = factor(guild, levels = guild_levels),
+    removal_fraction_label = factor(as.character(removal_fraction),
+                                    levels = as.character(selected_removal_levels_for_cdf))
+  )
+
+p2 <- ggplot(
+  cdf_active_plot,
+  aes(x = degree_threshold,
+      y = median_cumulative_probability,
+      colour = removal_fraction_label,
+      fill = removal_fraction_label,
+      group = removal_fraction_label)
+) +
+  geom_ribbon(aes(ymin = q025, ymax = q975), alpha = 0.15, colour = NA) +
+  geom_line(linewidth = 0.8, na.rm = TRUE) +
+  geom_point(size = 0.9, na.rm = TRUE) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_colour_manual(values = removal_colours, name = "Sites removed") +
+  scale_fill_manual(values = removal_colours, name = "Sites removed") +
+  facet_grid(guild ~ dataset, scales = "free") +
+  base_theme_29 +
+  xlab("Retained binary degree") +
+  ylab("P(retained degree >= x | retained degree > 0)")
+
+ggsave(
+  file.path(combined_out, "29_cumulative_degree_distributions_active_nodes.png"),
+  p2,
+  width = 16,
+  height = 6.5,
+  dpi = 300
+)
+
+## ---------------------------
 ## Figure 3: degree transitions by initial degree
 ## ---------------------------
 

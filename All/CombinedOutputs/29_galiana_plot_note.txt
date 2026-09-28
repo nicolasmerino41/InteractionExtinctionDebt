@@ -1,0 +1,36 @@
+Cumulative degree distributions are plotted on logarithmic x and y axes.
+
+The y-axis labels use ordinary decimal probabilities rather than scientific 10^n notation.
+
+The y-axis tick positions and y-axis limits are independent.
+
+Each dataset and guild has its own y-axis limits. This avoids imposing a common multiplicative padding on datasets with very different probability ranges.
+
+The 1.0 probability tick lies inside the plotting region rather than exactly at the upper panel boundary.
+
+The lower labelled tick also lies inside the plotting region rather than defining the lower panel boundary.
+
+Datasets are displayed in Galiana et al. order:
+
+Plant-pollinator:
+Garraf PP
+Garraf PP2
+Montseny
+Gottin PP
+Nahuel
+
+Host-parasite:
+Garraf HP
+Quercus
+Olot
+Gottin HP
+Galpar
+
+Four figures are produced:
+
+1. All original nodes: consumers and resources
+2. Active nodes only: consumers and resources
+3. Active consumers only: 2 x 5
+4. Active resources only: 2 x 5
+
+The cumulative distributions themselves are unchanged by these plotting modifications.
