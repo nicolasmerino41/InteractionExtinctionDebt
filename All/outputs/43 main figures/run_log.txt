@@ -1,0 +1,25 @@
+Computed Quercus
+Computed Nahuel
+Computed Salix_Galpar
+Computed Gottin_HP
+Computed Gottin_PP
+Computed Garraf_HP
+Computed Garraf_PP
+Computed Garraf_PP2
+Computed Olot
+Computed Montseny
+ERROR: LoadError: ParseError:
+# Error @ C:\Users\MM-1\OneDrive\PhD\GitHub\InteractionExtinctionDebt\All\scripts\43 main figures\main_figures.jl:122:19
+    v=sup.support[sup.dataset.==ds]
+    scatter!(b,i.+.52.*(rand(rng,length(v)).-.5),v;color=(SUPPORT,.14),markersize=4)
+#                 └──┘ ── invalid numeric constant
+Stacktrace:
+ [1] top-level scope
+   @ C:\Users\MM-1\OneDrive\PhD\GitHub\InteractionExtinctionDebt\All\scripts\43 main figures\main_figures.jl:122
+ [2] include(mod::Module, _path::String)
+   @ Base .\Base.jl:306
+ [3] exec_options(opts::Base.JLOptions)
+   @ Base .\client.jl:317
+ [4] _start()
+   @ Base .\client.jl:550
+in expression starting at C:\Users\MM-1\OneDrive\PhD\GitHub\InteractionExtinctionDebt\All\scripts\43 main figures\main_figures.jl:122

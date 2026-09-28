@@ -1,0 +1,146 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+[1] "Spanish_Spain.utf8"
+Loading required package: dplyr
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: tidyr
+Loading required package: ggplot2
+Loading required package: tibble
+Loading required package: igraph
+
+Attaching package: 'igraph'
+
+The following object is masked from 'package:tibble':
+
+    as_data_frame
+
+The following object is masked from 'package:tidyr':
+
+    crossing
+
+The following objects are masked from 'package:dplyr':
+
+    as_data_frame, groups, union
+
+The following objects are masked from 'package:stats':
+
+    decompose, spectrum
+
+The following object is masked from 'package:base':
+
+    union
+
+Loading required package: bipartite
+Loading required package: sna
+Loading required package: statnet.common
+
+Attaching package: 'statnet.common'
+
+The following objects are masked from 'package:base':
+
+    attr, order
+
+Loading required package: network
+
+'network' 1.19.0 (2024-12-08), part of the Statnet Project
+* 'news(package="network")' for changes since last version
+* 'citation("network")' for citation information
+* 'https://statnet.org' for help, support, and other information
+
+
+Attaching package: 'network'
+
+The following objects are masked from 'package:igraph':
+
+    %c%, %s%, add.edges, add.vertices, delete.edges, delete.vertices,
+    get.edge.attribute, get.edges, get.vertex.attribute, is.bipartite,
+    is.directed, list.edge.attributes, list.vertex.attributes,
+    set.edge.attribute, set.vertex.attribute
+
+sna: Tools for Social Network Analysis
+Version 2.8 created on 2024-09-07.
+copyright (c) 2005, Carter T. Butts, University of California-Irvine
+ For citation information, type citation("sna").
+ Type help(package="sna") to get started.
+
+
+Attaching package: 'sna'
+
+The following objects are masked from 'package:igraph':
+
+    betweenness, bonpow, closeness, components, degree, dyad.census,
+    evcent, hierarchy, is.connected, neighborhood, triad.census
+
+Loading required package: vegan
+Loading required package: permute
+
+Attaching package: 'permute'
+
+The following object is masked from 'package:igraph':
+
+    permute
+
+Loading required package: lattice
+This is vegan 2.6-4
+
+Attaching package: 'vegan'
+
+The following object is masked from 'package:igraph':
+
+    diversity
+
+ This is bipartite 2.21.
+ For latest changes see versionlog in ?"bipartite-package". For citation see: citation("bipartite").
+ Have a nice time plotting and analysing two-mode networks.
+
+Attaching package: 'bipartite'
+
+The following object is masked from 'package:vegan':
+
+    nullmodel
+
+The following object is masked from 'package:igraph':
+
+    strength
+
+Warning messages:
+1: package 'dplyr' was built under R version 4.3.3 
+2: package 'igraph' was built under R version 4.3.3 
+3: package 'bipartite' was built under R version 4.3.3 
+4: package 'sna' was built under R version 4.3.3 
+5: package 'network' was built under R version 4.3.3 
+10×7 DataFrame
+ Row │ dataset       p_emp     f_regional  mean_pair_conversion  mean_realised_pair_conversion  pink_auc_0_08  mean_pink_0_08
+     │ String15      Float64   Float64     Float64               Float64                        Float64        Float64
+─────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ Garraf_PP2    0.341592    0.263416              0.25022                        0.949905      0.0170498       0.0213122
+   2 │ Garraf_HP     0.300567    0.284345              0.234368                       0.824238      0.0484594       0.0605743
+   3 │ Nahuel        0.167671    0.173774              0.132232                       0.760941      0.0680762       0.0850953
+   4 │ Garraf_PP     0.255385    0.239852              0.171874                       0.716581      0.068108        0.085135
+   5 │ Olot          0.241412    0.215457              0.152924                       0.709766      0.0696442       0.0870553
+   6 │ Quercus       0.148995    0.160822              0.109595                       0.681467      0.0774791       0.0968489
+   7 │ Salix_Galpar  0.300542    0.296402              0.190981                       0.644332      0.0790024       0.0987531
+   8 │ Montseny      0.194192    0.184547              0.121963                       0.660875      0.0935988       0.116999
+   9 │ Gottin_HP     0.2         0.215649              0.130899                       0.607         0.100542        0.125677
+  10 │ Gottin_PP     0.102091    0.12133               0.057706                       0.475613      0.128497        0.160621
+4×3 DataFrame
+ Row │ metric                         pearson    spearman
+     │ String                         Float64    Float64
+─────┼─────────────────────────────────────────────────────
+   1 │ p_emp                          -0.797883  -0.636364
+   2 │ f_regional                     -0.650475  -0.442424
+   3 │ mean_pair_conversion           -0.888425  -0.769697
+   4 │ mean_realised_pair_conversion  -0.983664  -0.987879

@@ -1,0 +1,1971 @@
+using CSV, DataFrames, CairoMakie, Statistics, Random, LinearAlgebra, Printf
+
+
+# ============================================================
+# Run:
+# julia "All/scripts/43 main figures/main_figures.jl" [repository root]
+#
+# Refresh inputs first with export_inputs.R.
+# All analysis and rendering below is Julia.
+# ============================================================
+
+ROOT = isempty(ARGS) ?
+    normpath(joinpath(@__DIR__, "..", "..", "..")) :
+    abspath(ARGS[1])
+
+OUT = joinpath(ROOT, "All/outputs/43 main figures")
+INPUT = joinpath(OUT, "inputs")
+
+DATA = [
+    "Quercus",
+    "Nahuel",
+    "Salix_Galpar",
+    "Gottin_HP",
+    "Gottin_PP",
+    "Garraf_HP",
+    "Garraf_PP",
+    "Garraf_PP2",
+    "Olot",
+    "Montseny"
+]
+
+NREPS = 500
+REMOVAL = collect(0.0:0.1:0.8)
+EXAMPLE = "Salix_Galpar"
+
+
+# ============================================================
+# COLOURS
+# ============================================================
+
+# Paul Tol qualitative colours; fixed semantics across figures.
+
+SUPPORT = "#332288"
+INTERACTION = "#44AA99"
+SPECIES = "#AA4499"
+CO_ONLY = "#CC6677"
+CO_LOST = "#BBBBBB"
+
+DEGREE_COLORS = [
+    "#88CCEE",
+    "#4477AA",
+    "#332288"
+]
+
+
+# ============================================================
+# DISPLAY NAMES
+# ============================================================
+
+DISPLAY = Dict(
+    s => replace(s, "_" => " ")
+    for s in DATA
+)
+
+DISPLAY["Salix_Galpar"] = "Salix–Galpar"
+
+
+mkpath(
+    joinpath(OUT, "tables")
+)
+
+
+# ============================================================
+# EXACT LOSS PROBABILITY
+# ============================================================
+
+loss(k, N, m) =
+    k > m ?
+    0.0 :
+    prod(
+        (
+            (m-j) / (N-j)
+            for j in 0:k-1
+        );
+        init=1.0
+    )
+
+
+@assert isapprox(
+    loss(2, 10, 5),
+    2/9
+)
+
+@assert loss(1, 10, 0) == 0
+@assert loss(1, 10, 10) == 1
+
+
+# ============================================================
+# ANALYSIS
+# ============================================================
+
+if !("--plot-only" in ARGS)
+
+    curves = NamedTuple[]
+    supports = NamedTuple[]
+    conversions = NamedTuple[]
+    repstats = NamedTuple[]
+    degree_rows = NamedTuple[]
+    checks = NamedTuple[]
+
+
+    for (di, ds) in enumerate(DATA)
+
+        ints = CSV.read(
+            joinpath(INPUT, ds * "_interactions.csv"),
+            DataFrame;
+            types=String
+        )
+
+        co = CSV.read(
+            joinpath(INPUT, ds * "_cooccurrences.csv"),
+            DataFrame;
+            types=String
+        )
+
+        occ = CSV.read(
+            joinpath(INPUT, ds * "_occupancy.csv"),
+            DataFrame;
+            types=String
+        )
+
+
+        @assert nrow(unique(ints)) == nrow(ints)
+
+
+        # ----------------------------------------------------
+        # Sites and realised regional interaction links
+        # ----------------------------------------------------
+
+        sites = sort(
+            unique(
+                vcat(
+                    ints.site,
+                    co.site,
+                    occ.site
+                )
+            )
+        )
+
+        N = length(sites)
+
+
+        links = unique(
+            collect(
+                zip(
+                    ints.consumer,
+                    ints.resource
+                )
+            )
+        )
+
+        L = length(links)
+
+
+        li = Dict(
+            p => i
+            for (i, p) in enumerate(links)
+        )
+
+        si = Dict(
+            p => i
+            for (i, p) in enumerate(sites)
+        )
+
+
+        # ----------------------------------------------------
+        # Interaction support K
+        #
+        # Number of sites at which each regional interaction
+        # is actually observed.
+        # ----------------------------------------------------
+
+        site_links = [
+            Int[]
+            for _ in sites
+        ]
+
+        K = zeros(Int, L)
+
+
+        for r in eachrow(ints)
+
+            j = li[
+                (
+                    r.consumer,
+                    r.resource
+                )
+            ]
+
+            push!(
+                site_links[
+                    si[r.site]
+                ],
+                j
+            )
+
+            K[j] += 1
+        end
+
+
+        # ----------------------------------------------------
+        # Co-occurrence support K_CO
+        #
+        # Absolute number of sites at which the consumer and
+        # resource of each realised regional interaction
+        # co-occur.
+        # ----------------------------------------------------
+
+        ccounts =
+            Dict{
+                Tuple{String, String},
+                Int
+            }()
+
+
+        for r in eachrow(co)
+
+            key = (
+                r.consumer,
+                r.resource
+            )
+
+            ccounts[key] =
+                get(
+                    ccounts,
+                    key,
+                    0
+                ) + 1
+        end
+
+
+        n = [
+            ccounts[p]
+            for p in links
+        ]
+
+
+        @assert all(
+            K .<= n
+        )
+
+
+        # ----------------------------------------------------
+        # Species occupancy support
+        # ----------------------------------------------------
+
+        spcounts = combine(
+            groupby(
+                occ,
+                [
+                    :trophic_level,
+                    :species
+                ]
+            ),
+            nrow => :support
+        ).support
+
+
+        # ----------------------------------------------------
+        # Store link-level support
+        # ----------------------------------------------------
+
+        for (i, p) in enumerate(links)
+
+            push!(
+                supports,
+                (
+                    dataset=ds,
+                    consumer=p[1],
+                    resource=p[2],
+
+                    # realised interaction support
+                    support=K[i],
+
+                    # absolute co-occurrence support
+                    cooccurrence_support=n[i],
+
+                    sites=N
+                )
+            )
+        end
+
+
+        # ----------------------------------------------------
+        # Expected interaction states under site removal
+        # ----------------------------------------------------
+
+        pink = Float64[]
+
+
+        for f in REMOVAL
+
+            m =
+                N -
+                max(
+                    1,
+                    round(
+                        Int,
+                        N * (1-f)
+                    )
+                )
+
+
+            grey =
+                mean(
+                    loss(k, N, m)
+                    for k in n
+                )
+
+
+            extinct =
+                mean(
+                    loss(k, N, m)
+                    for k in K
+                )
+
+
+            green =
+                1 - extinct
+
+
+            coonly =
+                extinct - grey
+
+
+            push!(
+                pink,
+                coonly
+            )
+
+
+            push!(
+                curves,
+                (
+                    dataset=ds,
+                    removal=f,
+                    actual_removal=m/N,
+
+                    species=
+                        mean(
+                            1 - loss(k, N, m)
+                            for k in spcounts
+                        ),
+
+                    regional=green,
+
+                    local_support=
+                        1 - m/N,
+
+                    green=green,
+                    pink=coonly,
+                    grey=grey
+                )
+            )
+
+
+            @assert isapprox(
+                green + coonly + grey,
+                1
+            )
+
+            @assert coonly >= -1e-12
+        end
+
+
+        # ----------------------------------------------------
+        # Mean co-occurrence-only fraction over 0–80% removal
+        # ----------------------------------------------------
+
+        area =
+            sum(
+                diff(REMOVAL) .*
+                (
+                    pink[1:end-1] .+
+                    pink[2:end]
+                ) ./ 2
+            )
+
+
+        # ----------------------------------------------------
+        # Dataset-level conversion quantities
+        #
+        # p_emp:
+        # realised pair-site occurrences /
+        # co-occurring pair-site opportunities
+        #
+        # mean_cooccurrence_support:
+        # mean absolute number of co-occurring sites per
+        # realised regional interaction.
+        #
+        # This is the new x variable for Figure 2d2.
+        # ----------------------------------------------------
+
+        mean_cooccurrence_support =
+            mean(n)
+
+
+        push!(
+            conversions,
+            (
+                dataset=ds,
+                sites=N,
+                links=L,
+
+                p_emp=
+                    sum(K) /
+                    sum(values(ccounts)),
+
+                f_regional=
+                    L /
+                    length(ccounts),
+
+                pink_area=area,
+
+                mean_pink=
+                    area / 0.8,
+
+                mean_cooccurrence_support=
+                    mean_cooccurrence_support
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # Consumer degree analysis
+        # ----------------------------------------------------
+
+        consumers =
+            sort(
+                unique(
+                    ints.consumer
+                )
+            )
+
+
+        ci = Dict(
+            s => i
+            for (i, s) in enumerate(consumers)
+        )
+
+
+        link_consumer = [
+            ci[p[1]]
+            for p in links
+        ]
+
+
+        initial =
+            zeros(
+                Int,
+                length(consumers)
+            )
+
+
+        for j in link_consumer
+            initial[j] += 1
+        end
+
+
+        rng =
+            MersenneTwister(
+                4300 + di
+            )
+
+
+        degree_samples =
+            Dict(
+                f =>
+                    Vector{
+                        Vector{Float64}
+                    }()
+
+                for f in [
+                    0.0,
+                    0.4,
+                    0.8
+                ]
+            )
+
+
+        for rep in 1:NREPS
+
+            order =
+                randperm(
+                    rng,
+                    N
+                )
+
+            remaining =
+                copy(K)
+
+            last_removed =
+                0
+
+
+            for f in REMOVAL
+
+                m =
+                    N -
+                    max(
+                        1,
+                        round(
+                            Int,
+                            N * (1-f)
+                        )
+                    )
+
+
+                for pos in last_removed+1:m
+
+                    for j in site_links[
+                        order[pos]
+                    ]
+
+                        remaining[j] -= 1
+                    end
+                end
+
+
+                last_removed =
+                    m
+
+
+                deg =
+                    zeros(
+                        Int,
+                        length(consumers)
+                    )
+
+
+                for j in eachindex(
+                    remaining
+                )
+
+                    if remaining[j] > 0
+
+                        deg[
+                            link_consumer[j]
+                        ] += 1
+                    end
+                end
+
+
+                active =
+                    deg .> 0
+
+
+                compression =
+                    any(active) ?
+                    mean(
+                        deg[active] ./
+                        initial[active]
+                    ) :
+                    NaN
+
+
+                enrichment =
+                    any(active) ?
+                    mean(
+                        initial[active]
+                    ) /
+                    mean(initial) :
+                    NaN
+
+
+                push!(
+                    repstats,
+                    (
+                        dataset=ds,
+                        removal=f,
+                        replicate=rep,
+                        portfolio_retention=compression,
+                        initial_degree_enrichment=enrichment,
+                        active_fraction=mean(active)
+                    )
+                )
+
+
+                if (
+                    ds == EXAMPLE &&
+                    haskey(
+                        degree_samples,
+                        f
+                    ) &&
+                    any(active)
+                )
+
+                    push!(
+                        degree_samples[f],
+                        [
+                            mean(
+                                deg[active] .>= k
+                            )
+                            for k in 1:maximum(initial)
+                        ]
+                    )
+                end
+
+
+                if f == 0
+
+                    @assert deg == initial
+                    @assert compression == 1
+                    @assert enrichment == 1
+                end
+            end
+        end
+
+
+        # ----------------------------------------------------
+        # Example degree distribution
+        # ----------------------------------------------------
+
+        if ds == EXAMPLE
+
+            for f in [
+                0.0,
+                0.4,
+                0.8
+            ]
+
+                mat =
+                    reduce(
+                        hcat,
+                        degree_samples[f]
+                    )
+
+
+                for k in axes(
+                    mat,
+                    1
+                )
+
+                    v =
+                        mat[k, :]
+
+
+                    push!(
+                        degree_rows,
+                        (
+                            dataset=ds,
+                            removal=f,
+                            degree=k,
+                            probability=median(v),
+                            low=quantile(v, 0.025),
+                            high=quantile(v, 0.975)
+                        )
+                    )
+                end
+            end
+        end
+
+
+        # ----------------------------------------------------
+        # Dataset checks
+        # ----------------------------------------------------
+
+        if ds == "Gottin_HP"
+
+            @assert !(
+                "V1" in consumers
+            )
+
+            @assert L == 108
+        end
+
+
+        push!(
+            checks,
+            (
+                dataset=ds,
+                sites=N,
+                links=L,
+                consumers=length(consumers),
+                checks_passed=true
+            )
+        )
+
+
+        println(
+            "Computed ",
+            ds
+        )
+    end
+
+
+    # ========================================================
+    # TABLES
+    # ========================================================
+
+    c =
+        DataFrame(curves)
+
+    sup =
+        DataFrame(supports)
+
+    conv =
+        DataFrame(conversions)
+
+    reps =
+        DataFrame(repstats)
+
+    dd =
+        DataFrame(degree_rows)
+
+
+    finitemean(x) =
+        mean(
+            filter(
+                isfinite,
+                x
+            )
+        )
+
+
+    rs =
+        combine(
+            groupby(
+                reps,
+                [
+                    :dataset,
+                    :removal
+                ]
+            ),
+
+            :portfolio_retention =>
+                finitemean =>
+                :portfolio_retention,
+
+            :initial_degree_enrichment =>
+                finitemean =>
+                :initial_degree_enrichment,
+
+            :active_fraction =>
+                mean =>
+                :active_fraction
+        )
+
+
+    pooled =
+        combine(
+            groupby(
+                c,
+                :removal
+            ),
+
+            [
+                v => mean => v
+                for v in [
+                    :species,
+                    :regional,
+                    :local_support,
+                    :green,
+                    :pink,
+                    :grey
+                ]
+            ]...
+        )
+
+
+    rp =
+        combine(
+            groupby(
+                rs,
+                :removal
+            ),
+
+            :portfolio_retention =>
+                mean =>
+                :portfolio_retention,
+
+            :initial_degree_enrichment =>
+                mean =>
+                :initial_degree_enrichment
+        )
+
+
+    for (name, table) in [
+
+        (
+            "retention_and_states",
+            c
+        ),
+
+        (
+            "link_support",
+            sup
+        ),
+
+        (
+            "conversion_and_pink_area",
+            conv
+        ),
+
+        (
+            "consumer_replicates",
+            reps
+        ),
+
+        (
+            "consumer_dataset_summary",
+            rs
+        ),
+
+        (
+            "degree_example",
+            dd
+        ),
+
+        (
+            "validation",
+            DataFrame(checks)
+        ),
+
+        (
+            "pooled_retention",
+            pooled
+        ),
+
+        (
+            "pooled_consumers",
+            rp
+        )
+    ]
+
+        CSV.write(
+            joinpath(
+                OUT,
+                "tables",
+                name * ".csv"
+            ),
+            table
+        )
+    end
+
+
+# ============================================================
+# PLOT-ONLY
+# ============================================================
+
+else
+
+    table(name) =
+        CSV.read(
+            joinpath(
+                OUT,
+                "tables",
+                name * ".csv"
+            ),
+            DataFrame
+        )
+
+
+    c =
+        table(
+            "retention_and_states"
+        )
+
+    sup =
+        table(
+            "link_support"
+        )
+
+    conv =
+        table(
+            "conversion_and_pink_area"
+        )
+
+    rs =
+        table(
+            "consumer_dataset_summary"
+        )
+
+    pooled =
+        table(
+            "pooled_retention"
+        )
+
+    rp =
+        table(
+            "pooled_consumers"
+        )
+
+    dd =
+        table(
+            "degree_example"
+        )
+
+
+    # --------------------------------------------------------
+    # Backward compatibility:
+    #
+    # If --plot-only is used with an older conversion table
+    # that predates mean_cooccurrence_support, reconstruct it
+    # directly from the existing link_support table.
+    # --------------------------------------------------------
+
+    if !(
+        :mean_cooccurrence_support
+        in propertynames(conv)
+    )
+
+        cosummary =
+            combine(
+                groupby(
+                    sup,
+                    :dataset
+                ),
+
+                :cooccurrence_support =>
+                    mean =>
+                    :mean_cooccurrence_support
+            )
+
+
+        conv =
+            leftjoin(
+                conv,
+                cosummary;
+                on=:dataset
+            )
+    end
+end
+
+
+# ============================================================
+# THEME
+# ============================================================
+
+set_theme!(
+    Theme(
+        font="Arial",
+        fontsize=22,
+
+        Axis=(
+            backgroundcolor=:white,
+            xgridvisible=false,
+            ygridvisible=false,
+            topspinevisible=false,
+            rightspinevisible=false,
+
+            spinewidth=1.1,
+
+            xtickwidth=1.1,
+            ytickwidth=1.1,
+
+            xticklabelsize=19,
+            yticklabelsize=19,
+
+            xlabelsize=22,
+            ylabelsize=22
+        ),
+
+        Legend=(
+            framevisible=false,
+            labelsize=19,
+            patchsize=(24, 15)
+        )
+    )
+)
+
+
+percent_ticks = (
+    [
+        0,
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1.0
+    ],
+
+    string.(
+        [
+            0,
+            20,
+            40,
+            60,
+            80,
+            100
+        ]
+    )
+)
+
+
+# ============================================================
+# PANEL LABEL
+# ============================================================
+
+function panel!(
+    slot,
+    letter
+)
+
+    Label(
+        slot,
+        letter;
+
+        font=:bold,
+        fontsize=28,
+
+        halign=:left,
+        valign=:top,
+
+        tellwidth=false,
+        tellheight=false,
+
+        padding=(
+            -45,
+            0,
+            12,
+            0
+        )
+    )
+end
+
+
+# ============================================================
+# SAVE FIGURE
+#
+# PNG ONLY
+# ============================================================
+
+function save_figure(
+    fig,
+    name
+)
+
+    save(
+        joinpath(
+            OUT,
+            name * ".png"
+        ),
+        fig;
+        px_per_unit=2
+    )
+end
+
+
+# ============================================================
+# FIGURE 2
+#
+# a = retained species / interactions / local occurrences
+# b = supporting sites per interaction
+# c = interaction states under site removal
+# d1 = empirical local interaction realisation vs CO-only
+# d2 = absolute CO support per interaction vs CO-only
+# ============================================================
+
+f2 =
+    Figure(
+        size=(1800, 1320),
+        figure_padding=(
+            80,
+            35,
+            35,
+            35
+        )
+    )
+
+
+# ============================================================
+# FIGURE 2a
+# ============================================================
+
+a =
+    Axis(
+        f2[1, 1],
+
+        xlabel=
+            "Sites removed (%)",
+
+        ylabel=
+            "Retained (%)",
+
+        xticks=
+            percent_ticks,
+
+        yticks=
+            percent_ticks
+    )
+
+
+for (col, color) in [
+
+    (
+        :species,
+        SPECIES
+    ),
+
+    (
+        :regional,
+        INTERACTION
+    ),
+
+    (
+        :local_support,
+        SUPPORT
+    )
+
+]
+
+    for ds in DATA
+
+        v =
+            c[
+                c.dataset .== ds,
+                :
+            ]
+
+
+        lines!(
+            a,
+            v.removal,
+            v[!, col],
+
+            color=(
+                color,
+                0.17
+            ),
+
+            linewidth=1.3
+        )
+    end
+
+
+    lines!(
+        a,
+        pooled.removal,
+        pooled[!, col],
+
+        color=color,
+        linewidth=3.5
+    )
+end
+
+
+xlims!(
+    a,
+    0,
+    0.8
+)
+
+ylims!(
+    a,
+    0,
+    1.02
+)
+
+
+axislegend(
+    a,
+
+    [
+        LineElement(
+            color=SPECIES,
+            linewidth=3
+        ),
+
+        LineElement(
+            color=INTERACTION,
+            linewidth=3
+        ),
+
+        LineElement(
+            color=SUPPORT,
+            linewidth=3
+        )
+    ],
+
+    [
+        "Species",
+        "Regional interactions",
+        "Local interaction occurrences"
+    ];
+
+    position=:lb,
+    labelsize=18,
+    patchsize=(25, 12),
+    framevisible=false
+)
+
+
+panel!(
+    f2[
+        1,
+        1,
+        TopLeft()
+    ],
+    "a"
+)
+
+
+# ============================================================
+# FIGURE 2b
+# ============================================================
+
+b =
+    Axis(
+        f2[1, 2],
+
+        ylabel=
+            "Supporting sites per interaction",
+
+        yscale=
+            log10,
+
+        xticks=(
+            1:10,
+            [
+                DISPLAY[s]
+                for s in DATA
+            ]
+        ),
+
+        xticklabelrotation=
+            pi / 4,
+
+        yticks=(
+            [
+                1,
+                2,
+                5,
+                10,
+                20,
+                50,
+                100,
+                200
+            ],
+
+            string.(
+                [
+                    1,
+                    2,
+                    5,
+                    10,
+                    20,
+                    50,
+                    100,
+                    200
+                ]
+            )
+        ),
+
+        xticklabelsize=17
+    )
+
+
+rng =
+    MersenneTwister(43)
+
+
+for (i, ds) in enumerate(DATA)
+
+    v =
+        sup.support[
+            sup.dataset .== ds
+        ]
+
+
+    scatter!(
+        b,
+
+        i .+
+        0.52 .*
+        (
+            rand(
+                rng,
+                length(v)
+            ) .-
+            0.5
+        ),
+
+        v;
+
+        color=(
+            SUPPORT,
+            0.23
+        ),
+
+        markersize=4.5
+    )
+
+
+    boxplot!(
+        b,
+
+        fill(
+            i,
+            length(v)
+        ),
+
+        v;
+
+        color=(
+            SUPPORT,
+            0.25
+        ),
+
+        strokecolor=
+            SUPPORT,
+
+        mediancolor=
+            :black,
+
+        whiskercolor=
+            SUPPORT,
+
+        show_outliers=
+            false,
+
+        width=
+            0.52,
+
+        whiskerwidth=
+            0.5
+    )
+end
+
+
+xlims!(
+    b,
+    0.4,
+    10.6
+)
+
+ylims!(
+    b,
+    0.85,
+    maximum(
+        sup.support
+    ) * 1.3
+)
+
+
+panel!(
+    f2[
+        1,
+        2,
+        TopLeft()
+    ],
+    "b"
+)
+
+
+# ============================================================
+# FIGURE 2c
+# ============================================================
+
+d =
+    Axis(
+        f2[2, 1],
+
+        xlabel=
+            "Sites removed (%)",
+
+        ylabel=
+            "Original interactions (%)",
+
+        xticks=
+            percent_ticks,
+
+        yticks=
+            percent_ticks
+    )
+
+
+x =
+    pooled.removal
+
+
+band!(
+    d,
+    x,
+    zeros(length(x)),
+    pooled.grey,
+
+    color=
+        CO_LOST
+)
+
+
+band!(
+    d,
+    x,
+    pooled.grey,
+    pooled.grey + pooled.pink,
+
+    color=
+        CO_ONLY
+)
+
+
+band!(
+    d,
+    x,
+    pooled.grey + pooled.pink,
+    ones(length(x)),
+
+    color=
+        INTERACTION
+)
+
+
+xlims!(
+    d,
+    0,
+    0.8
+)
+
+ylims!(
+    d,
+    0,
+    1
+)
+
+
+panel!(
+    f2[
+        2,
+        1,
+        TopLeft()
+    ],
+    "c"
+)
+
+
+# ============================================================
+# FIGURE 2d
+#
+# Two scatter plots in the lower-right panel.
+#
+# d1:
+# empirical interaction realisation
+# versus mean co-occurrence-only fraction
+#
+# d2:
+# mean absolute number of co-occurring sites per interaction
+# versus mean co-occurrence-only fraction
+# ============================================================
+
+dgrid =
+    GridLayout()
+
+f2[2, 2] =
+    dgrid
+
+
+# ============================================================
+# FIGURE 2d1
+# Existing relationship
+# ============================================================
+
+e1 =
+    Axis(
+        dgrid[1, 1],
+
+        xlabel=
+            "Empirical local interaction realisation (%)",
+
+        ylabel=
+            "Mean co-occurrence-only fraction (%)",
+
+        xticks=(
+            [
+                0.1,
+                0.2,
+                0.3,
+                0.4
+            ],
+
+            [
+                "10",
+                "20",
+                "30",
+                "40"
+            ]
+        ),
+
+        yticks=(
+            [
+                0,
+                0.05,
+                0.10,
+                0.15,
+                0.20
+            ],
+
+            [
+                "0",
+                "5",
+                "10",
+                "15",
+                "20"
+            ]
+        )
+    )
+
+
+xx1 =
+    range(
+        minimum(
+            conv.p_emp
+        ),
+        maximum(
+            conv.p_emp
+        ),
+        length=100
+    )
+
+
+beta1 =
+    hcat(
+        ones(
+            nrow(conv)
+        ),
+        conv.p_emp
+    ) \ conv.mean_pink
+
+
+lines!(
+    e1,
+
+    xx1,
+
+    beta1[1] .+
+    beta1[2] .* xx1;
+
+    color=:gray40,
+    linewidth=1.6
+)
+
+
+scatter!(
+    e1,
+
+    conv.p_emp,
+    conv.mean_pink;
+
+    color=
+        CO_ONLY,
+
+    markersize=
+        13,
+
+    strokecolor=
+        :white,
+
+    strokewidth=
+        1
+)
+
+
+# ============================================================
+# Label offsets for d1
+# ============================================================
+
+offsets_d1 =
+    Dict(
+        "Quercus" =>
+            (-8, -15),
+
+        "Nahuel" =>
+            (8, -12),
+
+        "Salix_Galpar" =>
+            (8, 7),
+
+        "Gottin_HP" =>
+            (8, 9),
+
+        "Gottin_PP" =>
+            (8, 8),
+
+        "Garraf_HP" =>
+            (-10, -12),
+
+        "Garraf_PP" =>
+            (12, -28),
+
+        "Garraf_PP2" =>
+            (-8, 8),
+
+        "Olot" =>
+            (-8, 15),
+
+        "Montseny" =>
+            (-8, 9)
+    )
+
+
+for r in eachrow(conv)
+
+    dx, dy =
+        offsets_d1[
+            r.dataset
+        ]
+
+
+    text!(
+        e1,
+
+        r.p_emp,
+        r.mean_pink;
+
+        text=
+            DISPLAY[
+                r.dataset
+            ],
+
+        offset=(
+            dx,
+            dy
+        ),
+
+        align=(
+            dx < 0 ?
+            :right :
+            :left,
+
+            dy < 0 ?
+            :top :
+            :bottom
+        ),
+
+        fontsize=14
+    )
+end
+
+
+xlims!(
+    e1,
+    0.075,
+    0.40
+)
+
+ylims!(
+    e1,
+    0,
+    0.19
+)
+
+
+text!(
+    e1,
+    0.97,
+    0.97;
+
+    space=:relative,
+
+    text=@sprintf(
+        "r = %.2f",
+        cor(
+            conv.p_emp,
+            conv.mean_pink
+        )
+    ),
+
+    align=(
+        :right,
+        :top
+    ),
+
+    fontsize=18
+)
+
+
+# ============================================================
+# FIGURE 2d2
+#
+# NEW:
+# absolute number of co-occurring sites per interaction
+# versus mean co-occurrence-only fraction
+#
+# Each point is one dataset.
+#
+# x = mean K_CO across its realised regional interactions.
+# ============================================================
+
+e2 =
+    Axis(
+        dgrid[1, 2],
+
+        xlabel=
+            "Mean co-occurring sites per interaction",
+
+        ylabel=
+            ""
+    )
+
+
+xx2 =
+    range(
+        minimum(
+            conv.mean_cooccurrence_support
+        ),
+        maximum(
+            conv.mean_cooccurrence_support
+        ),
+        length=100
+    )
+
+
+beta2 =
+    hcat(
+        ones(
+            nrow(conv)
+        ),
+        conv.mean_cooccurrence_support
+    ) \ conv.mean_pink
+
+
+lines!(
+    e2,
+
+    xx2,
+
+    beta2[1] .+
+    beta2[2] .* xx2;
+
+    color=:gray40,
+    linewidth=1.6
+)
+
+
+scatter!(
+    e2,
+
+    conv.mean_cooccurrence_support,
+    conv.mean_pink;
+
+    color=
+        CO_ONLY,
+
+    markersize=
+        13,
+
+    strokecolor=
+        :white,
+
+    strokewidth=
+        1
+)
+
+
+# ============================================================
+# Label offsets for d2
+#
+# Separate from d1 so you can adjust them independently.
+# ============================================================
+
+offsets_d2 =
+    Dict(
+        "Quercus" =>
+            (8, -12),
+
+        "Nahuel" =>
+            (8, 8),
+
+        "Salix_Galpar" =>
+            (8, 8),
+
+        "Gottin_HP" =>
+            (8, 8),
+
+        "Gottin_PP" =>
+            (8, 8),
+
+        "Garraf_HP" =>
+            (8, -12),
+
+        "Garraf_PP" =>
+            (8, -12),
+
+        "Garraf_PP2" =>
+            (8, 8),
+
+        "Olot" =>
+            (8, 8),
+
+        "Montseny" =>
+            (8, 8)
+    )
+
+
+for r in eachrow(conv)
+
+    dx, dy =
+        offsets_d2[
+            r.dataset
+        ]
+
+
+    text!(
+        e2,
+
+        r.mean_cooccurrence_support,
+        r.mean_pink;
+
+        text=
+            DISPLAY[
+                r.dataset
+            ],
+
+        offset=(
+            dx,
+            dy
+        ),
+
+        align=(
+            dx < 0 ?
+            :right :
+            :left,
+
+            dy < 0 ?
+            :top :
+            :bottom
+        ),
+
+        fontsize=14
+    )
+end
+
+
+# Same y-range as d1 so the two relationships
+# are visually directly comparable.
+
+ylims!(
+    e2,
+    0,
+    0.19
+)
+
+
+text!(
+    e2,
+    0.97,
+    0.97;
+
+    space=:relative,
+
+    text=@sprintf(
+        "r = %.2f",
+        cor(
+            conv.mean_cooccurrence_support,
+            conv.mean_pink
+        )
+    ),
+
+    align=(
+        :right,
+        :top
+    ),
+
+    fontsize=18
+)
+
+
+# Only left scatter needs y tick labels.
+
+hideydecorations!(
+    e2;
+    grid=false
+)
+
+
+# Label the complete pair as panel d.
+
+panel!(
+    f2[
+        2,
+        2,
+        TopLeft()
+    ],
+    "d"
+)
+
+
+# ============================================================
+# FIGURE 2 LEGEND
+# ============================================================
+
+Legend(
+    f2[3, 1:2],
+
+    [
+        PolyElement(
+            color=INTERACTION
+        ),
+
+        PolyElement(
+            color=CO_ONLY
+        ),
+
+        PolyElement(
+            color=CO_LOST
+        )
+    ],
+
+    [
+        "Interaction retained",
+        "Co-occurrence only",
+        "Co-occurrence lost"
+    ],
+
+    orientation=:horizontal
+)
+
+
+rowgap!(
+    f2.layout,
+    40
+)
+
+colgap!(
+    f2.layout,
+    75
+)
+
+colgap!(
+    dgrid,
+    50
+)
+
+
+save_figure(
+    f2,
+    "Figure2_interaction_erosion"
+)
+
+
+# ============================================================
+# FIGURE 3 — editable standalone revision
+include(joinpath(@__DIR__, "figure3_revised.jl"))
+
+# METHODS AND CAPTIONS
+# ============================================================
+
+write(
+    joinpath(
+        OUT,
+        "METHODS_AND_CAPTIONS.md"
+    ),
+
+"""# Methods and proposed figure captions
+
+Figure 2. (a) Fractions of regional species, regional interactions and local pair-site interaction occurrences retained under uniform random site removal. Thin lines: ten datasets; thick lines: equally weighted dataset means. All expectations are exact for sampling without replacement. (b) Supporting-site counts for each realised regional interaction. Points are individual links with horizontal jitter; boxes show median and interquartile range, whiskers 1.5 IQR; vertical axis is logarithmic. (c) Dataset-balanced expected states of originally realised regional interactions. Co-occurrence only means that an original interaction is no longer recorded, while its species remain recorded together at one or more retained sites. (d) Dataset-level relationships with the mean co-occurrence-only fraction over 0–80% removal, calculated as the trapezoidal pink area divided by 0.8. Left: local empirical interaction realisation, calculated as all realised pair-site occurrences divided by all co-occurring pair-site opportunities. Right: mean absolute co-occurrence support of realised regional interactions, measured as the mean number of sites in which the species pair co-occurs. Points are datasets; lines are descriptive OLS fits and r values are Pearson correlations, not causal inference.
+
+Figure 3. Generalist–specialist differences in local support and response to site removal. (a) Mean supporting-site count per realised partner, first averaged across species within each dataset, guild and degree group. Consumer and resource means receive equal weight within datasets. Faint points and connecting lines represent ten datasets; large points are dataset-balanced means, and vertical bars show the across-dataset interquartile range. (b, upper) Absolute number of regional partners lost per original species, including species that lose all partners. (b, lower) Fraction of original species retaining at least one recorded interaction. Thin lines show dataset means, thick lines equally weighted means across datasets, after averaging the two guilds equally. These are network-active species, not independent demographic survival observations. 500 uniform-random site-removal permutations per dataset; seed 4300 + dataset index. Groups are fixed at zero removal. As in scripts 36/36a, specialists occupy the lower half of distinct initial degree values within each dataset and guild, and generalists the upper half; this is not a median split of species counts. Definitions and sample sizes are saved in tables/figure3_group_definitions.csv. Guilds are merged for presentation, not species identities; each link contributes to its consumer and resource endpoint. (c) Smaller illustrative consumer degree-distribution example from Salix–Galpar, among active consumers, retaining the existing corrected 43 input and Galiana-style change-point rendering. No claim of a guild comparison is made.
+
+Inputs use the established shared R loader, exported by export_inputs.R. All calculations and plotting are Julia/CairoMakie. The exporter locally drops unnamed matrix columns BEFORE data.frame name repair. This removes the confirmed Gottin_HP V1 artifact and restores 108 named regional interactions; previous output folders and the shared loader are unchanged. Garraf_HP and Olot use the current site-level records (89 and 92 links); the previously found one-link differences from original published degree tables have not been assigned a preprocessing cause. These input discrepancies require reconciliation before submission. Co-occurrence/occurrence definitions inherit the shared loader. Site removal is not spatially contiguous habitat loss and does not model rewiring or within-site changes.
+
+The three outcomes at each removal level sum to one. Zero-removal portfolios and initial-degree enrichment equal one. K does not exceed co-occurrence support. Gottin_HP has no V1 consumer and has 108 regional links. All checks run as assertions; dataset checks and all plotted quantities are in tables/. Figures are provided as high-resolution PNG files without titles or explanatory footers. Palette and all layout settings can be edited at the top of main_figures.jl.
+"""
+)
+
+
+println(
+    "Saved Figures 2 and 3 as PNG files to ",
+    OUT
+)
